@@ -124,6 +124,38 @@ export default function Landing() {
                 </div>
             </main>
 
+            {/* --- COMBINED ABOUT US SECTION --- */}
+            <section className="relative z-10 px-8 md:px-20 pt-40 pb-32 border-t border-white/5">
+                <div className="space-y-8">
+                    {/* TITLE */}
+                    <div className="space-y-4">
+                        <div className="text-[10px] font-bold tracking-[0.4em] text-[#00FF85] border border-[#00FF85]/30 px-3 py-1.5 bg-[#00FF85]/5 inline-block">
+                            ABOUT CHARGEKARO
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-light leading-tight">
+                            Powering the Future of <br />
+                            <span className="font-bold italic text-[#00FF85]">EV Charging</span>
+                        </h2>
+                    </div>
+
+                    {/* UPDATED CONTENT BLOCK: Increased width to 80vw */}
+                    <div className="space-y-6 max-w-[80vw]">
+                        <p className="text-white/40 text-sm md:text-base leading-relaxed">
+                            ChargeKaro is an innovative peer-to-peer EV charging platform designed to make electric vehicle charging accessible, affordable, and convenient for everyone. As India moves toward a sustainable future, the lack of widespread charging infrastructure remains a major challenge for EV users. ChargeKaro bridges this gap by connecting EV drivers with nearby homeowners who are willing to share their electricity, transforming private homes into smart charging stations.
+                        </p>
+                        <p className="text-white/40 text-sm md:text-base leading-relaxed">
+                            Our system uses IoT-enabled smart adapters to ensure accurate tracking of electricity usage and transparent billing, allowing users to locate, book, and pay for charging in just a few clicks. This approach empowers homeowners to earn additional income from unused electricity and leverages existing infrastructure to eliminate the need for costly new charging stations. With AI-powered features for demand prediction and dynamic pricing, we ensure rapid scalability and a premium user experience.
+                        </p>
+                        <p className="text-white/40 text-sm md:text-base leading-relaxed">
+                            We are committed to building a decentralized and sustainable EV ecosystem that reduces range anxiety and promotes green energy adoption. ChargeKaro is not just a platform — it is a decisive step toward a smarter, cleaner, and more connected future of mobility.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+
+
+
             {/* --- FOOTER STATUS BAR --- */}
             <footer className="relative z-20 border-t border-white/5 bg-black/40 backdrop-blur-md px-8 py-6">
                 <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-8">

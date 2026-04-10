@@ -24,12 +24,10 @@ export default function Driver() {
     const [selected, setSelected] = useState(null)
     const [booking, setBooking] = useState(null)
     const [filter, setFilter] = useState('All')
-    const [userPos] = useState({ lat: 13.0200, lng: 80.2100 }); // User's Chennai location
     const mapRef = useRef(null)
     const leafletMap = useRef(null)
     const markersRef = useRef({})
     const listRefs = useRef({})
-    const routeLineRef = useRef(null);
 
     const types = ['All', 'Fast', 'Standard']
     const filtered = filter === 'All' ? hostsWithCoords : hostsWithCoords.filter(h => h.type === filter)
@@ -51,15 +49,6 @@ export default function Driver() {
                 zoom: 12,
                 zoomControl: false,
             })
-
-            // --- PASTE PART 2 HERE ---
-            const userIcon = L.divIcon({
-                className: '',
-                html: `<div style="width:20px;height:20px;background:#FF3B3B;border:3px solid #fff;border-radius:50%;box-shadow:0 0 15px rgba(255,59,59,0.5);"></div>`,
-                iconSize: [20, 20],
-            })
-            L.marker([13.0200, 80.2100], { icon: userIcon }).addTo(map)
-            // -------------------------
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -120,51 +109,6 @@ export default function Driver() {
         const el = listRefs.current[selected]
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, [selected])
-
-    useEffect(() => {
-  if (!leafletMap.current) return;
-
-  // Remove existing line if it exists
-  if (routeLineRef.current) {
-    leafletMap.current.removeLayer(routeLineRef.current);
-    routeLineRef.current = null;
-  }
-
-  // If a booking is active, draw the neon line
-  if (booking) {
-    const start = [userPos.lat, userPos.lng];
-    const end = [booking.lat, booking.lng];
-    const L = window.L;
-
-    // Create the neon blue line
-    const line = L.polyline([start, end], {
-      color: '#00D1FF',      // Neon Blue
-      weight: 4,
-      opacity: 0.8,
-      lineJoin: 'round',
-      dashArray: '1, 10',    // Makes it look like a "path"
-      animate: true          // Some leaflet plugins support this, otherwise standard line
-    }).addTo(leafletMap.current);
-
-    // Add a glowing "shadow" line behind it for the neon effect
-    const glow = L.polyline([start, end], {
-      color: '#00D1FF',
-      weight: 8,
-      opacity: 0.2,
-      lineJoin: 'round'
-    }).addTo(leafletMap.current);
-
-    // Group them so we can remove both later
-    routeLineRef.current = L.layerGroup([line, glow]).addTo(leafletMap.current);
-
-    // Zoom out to fit both points
-    leafletMap.current.fitBounds(L.latLngBounds([start, end]), {
-      padding: [50, 50],
-      animate: true
-    });
-  }
-}, [booking, userPos]);
-
 
     return (
         <div className="h-screen relative overflow-hidden bg-[#080808]">
