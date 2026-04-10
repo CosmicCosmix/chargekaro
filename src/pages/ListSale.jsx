@@ -2,11 +2,34 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, MapPin, Zap, User, Camera, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import ChatBot from '../components/HomeChatBot'
+import { createHost } from '../api/hostApi';
 
 export default function ListSale() {
     const navigate = useNavigate()
     const [profilePic, setProfilePic] = useState('https://dicebear.com')
+    const handleSubmit = async () => {
+        try {
+            await createHost({
+                name: "Aaryan Sharma",
+                address: "Chennai",
+                lat: 13.0827,
+                lng: 80.2707,
+                type: "Fast",
+                rate,
+                parking: parkingFee,
+                rating: 4.5,
+                available: true,
+                connector: "Type 2",
+                distance: "0 km",
+                image: profilePic
+            });
 
+            setShowSuccess(true);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to create host");
+        }
+    };
     // Local state for the sliders
     const [rate, setRate] = useState(7.5)
     const [parkingFee, setParkingFee] = useState(20)
@@ -110,11 +133,7 @@ export default function ListSale() {
                 </section>
 
                 {/* Final Action */}
-                <button
-                    onClick={() => setShowSuccess(true)}
-                    style={{ fontFamily: "'Syne', sans-serif" }}
-                    className="w-full bg-volt text-carbon font-black py-4 rounded-2xl shadow-[0_0_30px_rgba(200,244,0,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
+                <button onClick={handleSubmit}>
                     PUBLISH TO MAP
                 </button>
             </div>
@@ -122,7 +141,7 @@ export default function ListSale() {
             {/* PROFESSIONAL SUCCESS MODAL (ROUNDED SQUARE UI) */}
             {showSuccess && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm transition-all animate-in fade-in duration-300">
-                    <div 
+                    <div
                         className="relative w-full max-w-[300px] border border-white/10 rounded-[32px] p-8 text-center shadow-2xl animate-in zoom-in-95 duration-500 ease-out"
                         style={{ background: '#000000' }}
                     >

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Zap, Star, CheckCircle } from 'lucide-react'
-import { hosts } from '../data/hosts'
+import { Zap, MapPin, Navigation, Info } from 'lucide-react'
+import { fetchHosts } from '../api/hostApi'
 import BookingModal from '../components/BookingModal'
 import ChatBot from '../components/DriverChatBot'
 
@@ -14,23 +14,34 @@ const hostCoords = [
     { id: 6, lat: 13.0358, lng: 80.1561 },
 ]
 
-const hostsWithCoords = hosts.map(h => ({
-    ...h,
-    ...hostCoords.find(c => c.id === h.id),
-}))
-
 export default function Driver() {
     const navigate = useNavigate()
+    const [hostsWithCoords, setHostsWithCoords] = useState([])
     const [selected, setSelected] = useState(null)
     const [booking, setBooking] = useState(null)
     const [filter, setFilter] = useState('All')
+
     const mapRef = useRef(null)
     const leafletMap = useRef(null)
     const markersRef = useRef({})
-    const listRefs = useRef({})
 
     const types = ['All', 'Fast', 'Standard']
-    const filtered = filter === 'All' ? hostsWithCoords : hostsWithCoords.filter(h => h.type === filter)
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const data = await fetchHosts()
+                const merged = data.map(h => ({
+                    ...h,
+                    ...(hostCoords.find(c => c.id === h.id) || {})
+                }))
+                setHostsWithCoords(merged)
+            } catch (err) {
+                console.error('API ERROR:', err)
+            }
+        }
+        load()
+    }, [])
 
     useEffect(() => {
         if (leafletMap.current) return
@@ -42,6 +53,7 @@ export default function Driver() {
 
         const script = document.createElement('script')
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+
         script.onload = () => {
             const L = window.L
             const map = L.map(mapRef.current, {
@@ -50,47 +62,18 @@ export default function Driver() {
                 zoomControl: false,
             })
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                maxZoom: 19,
-            }).addTo(map)
+            L.tileLayer(
+                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                {
+                    attribution: '&copy; CARTO',
+                    maxZoom: 19,
+                }
+            ).addTo(map)
 
             L.control.zoom({ position: 'bottomleft' }).addTo(map)
-
-            hostsWithCoords.forEach(h => {
-                const color = !h.available ? '#3a3a3a' : h.type === 'Fast' ? '#e8572a' : '#b8f200'
-                const icon = L.divIcon({
-                    className: '',
-                    html: `
-            <div style="
-              width:32px;height:32px;border-radius:50%;
-              background:${color};
-              border:1.5px solid rgba(255,255,255,0.15);
-              display:flex;align-items:center;justify-content:center;
-              box-shadow:0 4px 16px ${h.available ? color + '55' : 'transparent'};
-              cursor:pointer;
-            ">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="${!h.available ? '#666' : '#0a0a0a'}" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-            </div>
-            <div style="
-              text-align:center;font-size:9px;font-weight:600;letter-spacing:0.03em;
-              color:rgba(255,255,255,0.6);margin-top:3px;
-              font-family:'DM Sans',sans-serif;
-            ">₹${h.rate}</div>
-          `,
-                    iconSize: [32, 48],
-                    iconAnchor: [16, 48],
-                })
-
-                const marker = L.marker([h.lat, h.lng], { icon }).addTo(map)
-                marker.on('click', () => setSelected(prev => prev === h.id ? null : h.id))
-                markersRef.current[h.id] = marker
-            })
-
             leafletMap.current = map
         }
+
         document.head.appendChild(script)
 
         return () => {
@@ -102,246 +85,160 @@ export default function Driver() {
     }, [])
 
     useEffect(() => {
-        if (!leafletMap.current || !selected) return
-        const host = hostsWithCoords.find(h => h.id === selected)
-        if (!host) return
-        leafletMap.current.panTo([host.lat, host.lng], { animate: true, duration: 0.6 })
-        const el = listRefs.current[selected]
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }, [selected])
+        if (!leafletMap.current || hostsWithCoords.length === 0) return
+
+        const L = window.L
+        Object.values(markersRef.current).forEach(marker => {
+            leafletMap.current.removeLayer(marker)
+        })
+        markersRef.current = {}
+
+        hostsWithCoords.forEach(h => {
+            if (!h.lat || !h.lng) return
+
+            const color = !h.available ? '#4B5563' : h.type === 'Fast' ? '#10B981' : '#A3E635'
+
+            const icon = L.divIcon({
+                className: '',
+                html: `
+                    <div style="
+                        width:36px; height:36px; border-radius:10px;
+                        background:#111; border:2px solid ${color};
+                        display:flex; align-items:center; justify-content:center;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                    ">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="${color}">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                `,
+                iconSize: [36, 36],
+                iconAnchor: [18, 36],
+            })
+
+            const marker = L.marker([h.lat, h.lng], { icon }).addTo(leafletMap.current)
+            marker.on('click', () => setSelected(prev => (prev === h.id ? null : h.id)))
+            markersRef.current[h.id] = marker
+        })
+    }, [hostsWithCoords])
+
+    const filtered = filter === 'All' ? hostsWithCoords : hostsWithCoords.filter(h => h.type === filter)
 
     return (
-        <div className="h-screen relative overflow-hidden bg-[#080808]">
-
-            {/* Map fills entire screen */}
+        <div className="h-screen relative bg-neutral-950 font-sans text-slate-200 overflow-hidden">
             <div ref={mapRef} className="absolute inset-0 z-0" />
 
-            {/* Logo — top left, floating */}
-            <div className="absolute top-5 left-5 z-20 flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#b8f200' }}>
-                    <Zap size={13} style={{ color: '#080808', fill: '#080808' }} />
+            {/* Top Bar / Logo */}
+            <div
+                className="absolute top-6 left-6 z-20 flex items-center gap-3 px-4 py-2 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 cursor-pointer hover:bg-black/60 transition"
+                onClick={() => navigate('/')}
+            >
+                <div className="w-8 h-8 bg-lime-400 flex items-center justify-center rounded-lg shadow-[0_0_15px_rgba(163,230,53,0.4)]">
+                    <Zap size={16} className="text-black" />
                 </div>
-                <span style={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '15px',
-                    letterSpacing: '-0.02em',
-                    color: '#fff',
-                }}>
-                    Charge<span style={{ color: '#b8f200' }}>Karo</span>
+                <span className="text-lg font-bold tracking-tight text-white">
+                    Charge<span className="text-lime-400">Karo</span>
                 </span>
             </div>
 
-            {/* Floating Panel — right */}
-            <div
-                className="absolute top-5 right-5 bottom-5 z-10 flex flex-col"
-                style={{
-                    width: '264px',
-                    background: 'rgba(10, 10, 10, 0.88)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                }}
-            >
-                {/* Panel Header */}
-                <div style={{ padding: '20px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                        <span style={{
-                            fontFamily: "'Syne', sans-serif",
-                            fontWeight: 600,
-                            fontSize: '13px',
-                            color: '#fff',
-                            letterSpacing: '-0.01em',
-                        }}>
-                            Available Stations
-                        </span>
-                        <span style={{
-                            fontSize: '10px',
-                            color: 'rgba(255,255,255,0.35)',
-                            fontFamily: "'DM Sans', sans-serif",
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                        }}>
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#b8f200', display: 'inline-block' }} />
-                            {hostsWithCoords.filter(h => h.available).length} live
-                        </span>
+            {/* Right Sleek Panel */}
+            <div className="absolute top-6 right-6 w-80 max-h-[calc(100vh-48px)] bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-3xl z-[1000] flex flex-col shadow-2xl">
+                <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-white tracking-tight">Charging Hubs</h2>
+                        <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Chennai</span>
                     </div>
 
-                    {/* Filter pills */}
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    {/* Filter Tabs */}
+                    <div className="flex bg-black/40 p-1 rounded-xl mb-6 border border-white/5">
                         {types.map(t => (
                             <button
                                 key={t}
                                 onClick={() => setFilter(t)}
-                                style={{
-                                    flex: 1,
-                                    padding: '6px 0',
-                                    borderRadius: '10px',
-                                    fontSize: '10px',
-                                    fontFamily: "'DM Sans', sans-serif",
-                                    fontWeight: 500,
-                                    letterSpacing: '0.02em',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    background: filter === t ? '#b8f200' : 'rgba(255,255,255,0.05)',
-                                    color: filter === t ? '#0a0a0a' : 'rgba(255,255,255,0.35)',
-                                }}
+                                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${filter === t
+                                        ? 'bg-lime-400 text-black shadow-lg'
+                                        : 'text-neutral-400 hover:text-white'
+                                    }`}
                             >
                                 {t}
                             </button>
                         ))}
                     </div>
-                </div>
 
-                {/* Host List */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px' }}>
-                    {filtered.map(h => (
-                        <button
-                            key={h.id}
-                            ref={el => listRefs.current[h.id] = el}
-                            onClick={() => setSelected(h.id === selected ? null : h.id)}
-                            style={{
-                                width: '100%',
-                                textAlign: 'left',
-                                display: 'block',
-                                padding: '12px',
-                                marginBottom: '6px',
-                                borderRadius: '14px',
-                                border: h.id === selected
-                                    ? '1px solid rgba(184,242,0,0.25)'
-                                    : '1px solid rgba(255,255,255,0.04)',
-                                background: h.id === selected
-                                    ? 'rgba(184,242,0,0.06)'
-                                    : 'rgba(255,255,255,0.02)',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease',
-                            }}
-                        >
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                {/* Avatar */}
-                                <div style={{
-                                    width: '34px', height: '34px', borderRadius: '10px',
-                                    overflow: 'hidden', background: 'rgba(255,255,255,0.06)',
-                                    flexShrink: 0,
-                                }}>
-                                    <img src={h.image} alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {/* Station List */}
+                    <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar" style={{ maxHeight: '60vh' }}>
+                        {filtered.map(h => (
+                            <div
+                                key={h.id}
+                                onClick={() => setSelected(prev => (prev === h.id ? null : h.id))}
+                                className={`group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${selected === h.id
+                                        ? 'bg-lime-400/10 border-lime-400/50'
+                                        : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.07]'
+                                    }`}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <h3 className="font-medium text-slate-100 group-hover:text-white transition-colors">{h.name}</h3>
+                                    <span className="text-lime-400 font-bold text-sm">₹{h.rate}</span>
                                 </div>
 
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Name + type badge */}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                        <span style={{
-                                            fontFamily: "'DM Sans', sans-serif",
-                                            fontWeight: 500,
-                                            fontSize: '12px',
-                                            color: '#fff',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '110px',
-                                        }}>{h.name}</span>
-                                        <span style={{
-                                            fontSize: '9px',
-                                            fontFamily: "'DM Sans', sans-serif",
-                                            fontWeight: 500,
-                                            letterSpacing: '0.04em',
-                                            padding: '2px 7px',
-                                            borderRadius: '20px',
-                                            background: h.type === 'Fast' ? 'rgba(232,87,42,0.15)' : 'rgba(184,242,0,0.1)',
-                                            color: h.type === 'Fast' ? '#e8572a' : '#b8f200',
-                                        }}>{h.type}</span>
-                                    </div>
+                                <div className="flex items-center gap-1.5 text-xs text-neutral-500 mb-3">
+                                    <MapPin size={12} />
+                                    <span className="truncate">{h.address}</span>
+                                </div>
 
-                                    {/* Address */}
-                                    <p style={{
-                                        fontSize: '10px',
-                                        color: 'rgba(255,255,255,0.3)',
-                                        fontFamily: "'DM Sans', sans-serif",
-                                        margin: '0 0 8px',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}>{h.address}</p>
-
-                                    {/* Rate + meta */}
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{
-                                            fontFamily: "'Syne', sans-serif",
-                                            fontWeight: 700,
-                                            fontSize: '14px',
-                                            color: '#b8f200',
-                                            letterSpacing: '-0.02em',
-                                        }}>
-                                            ₹{h.rate}
-                                            <span style={{ fontWeight: 400, fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: 0 }}>/unit</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${h.available ? 'bg-lime-500 animate-pulse' : 'bg-neutral-600'}`} />
+                                        <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+                                            {h.available ? 'Available' : 'In Use'}
                                         </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <Star size={9} style={{ color: '#facc15', fill: '#facc15' }} />
-                                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}>{h.rating}</span>
-                                            <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.15)' }}>·</span>
-                                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontFamily: "'DM Sans', sans-serif" }}>{h.distance}</span>
-                                        </div>
                                     </div>
-
-                                    {/* Unavailable */}
-                                    {!h.available && (
-                                        <p style={{ fontSize: '9px', color: '#e8572a', marginTop: '6px', fontFamily: "'DM Sans', sans-serif" }}>
-                                            Currently busy
-                                        </p>
-                                    )}
-
-                                    {/* Book CTA */}
-                                    {h.available && h.id === selected && (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setBooking(h) }}
-                                            style={{
-                                                marginTop: '10px',
-                                                width: '100%',
-                                                padding: '8px',
-                                                borderRadius: '10px',
-                                                background: '#b8f200',
-                                                color: '#0a0a0a',
-                                                fontFamily: "'Syne', sans-serif",
-                                                fontWeight: 700,
-                                                fontSize: '11px',
-                                                letterSpacing: '0.01em',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                            }}
-                                        >
-                                            Reserve Session
-                                        </button>
-                                    )}
+                                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-neutral-300">
+                                        {h.type}
+                                    </span>
                                 </div>
-                            </div>
-                        </button>
-                    ))}
-                </div>
 
-                {/* Footer */}
-                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                        {[
-                            { color: '#e8572a', label: 'Fast' },
-                            { color: '#b8f200', label: 'Standard' },
-                            { color: '#3a3a3a', label: 'Busy' },
-                        ].map(({ color, label }) => (
-                            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color }} />
-                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
+                                {h.available && selected === h.id && (
+                                    <button
+                                        className="mt-4 w-full bg-lime-400 hover:bg-lime-300 text-black font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                        onClick={e => {
+                                            e.stopPropagation()
+                                            setBooking(h)
+                                        }}
+                                    >
+                                        <Navigation size={14} />
+                                        Confirm Booking
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 </div>
+
+                {/* Footer Insight */}
+                <div className="mt-auto p-4 border-t border-white/5 bg-black/20 rounded-b-3xl flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Info size={14} className="text-blue-400" />
+                    </div>
+                    <p className="text-[10px] text-neutral-500 leading-tight">
+                        Prices are dynamic based on peak grid demand in your area.
+                    </p>
+                </div>
             </div>
 
-            {booking && <BookingModal host={booking} onClose={() => setBooking(null)} />}
+            {booking && (
+                <BookingModal host={booking} onClose={() => setBooking(null)} />
+            )}
 
             <ChatBot />
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+            `}} />
         </div>
     )
 }
