@@ -19,6 +19,8 @@ export default {
         pulse2: "pulse2 2s cubic-bezier(0.4,0,0.6,1) infinite",
         "slide-up": "slideUp 0.4s ease forwards",
         "fade-in": "fadeIn 0.5s ease forwards",
+        // ADD THIS LINE
+        scroll: "scroll 40s linear infinite",
       },
       keyframes: {
         pulse2: {
@@ -32,6 +34,11 @@ export default {
         fadeIn: {
           from: { opacity: 0 },
           to: { opacity: 1 },
+        },
+        // ADD THIS BLOCK
+        scroll: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(calc(-50% - 12px))" },
         },
       },
     },
