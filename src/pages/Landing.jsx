@@ -26,9 +26,15 @@ export default function Landing() {
                 {/* --- NAVBAR --- */}
                 <nav className="relative z-50 flex justify-between items-center px-8 md:px-12 py-5 border-b border-white/5 backdrop-blur-sm bg-black/20">
                     <div className="flex items-center gap-3 group cursor-pointer">
-                        <div className="p-1.5 bg-[#00FF85] rounded-md transition-transform group-hover:rotate-12">
-                            <Zap size={16} className="text-black fill-black" />
+                        {/* LOGO IMAGE */}
+                        <div className="transition-transform group-hover:rotate-12">
+                            <img
+                                src="/logo.png"
+                                alt="ChargeKaro Logo"
+                                className="h-16 w-auto object-contain"
+                            />
                         </div>
+
                         <span className="tracking-[0.3em] font-bold text-sm">CHARGE<span className="text-[#00FF85]">KARO</span></span>
                     </div>
 

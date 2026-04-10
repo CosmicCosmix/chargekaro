@@ -5,6 +5,9 @@ import { fetchHosts } from '../api/hostApi'
 import BookingModal from '../components/BookingModal'
 import ChatBot from '../components/DriverChatBot'
 
+// Hardcoded User Location (Example: Mount Road / Guindy area in Chennai)
+const USER_LOCATION = { lat: 13.0604, lng: 80.2496 }
+
 const hostCoords = [
     { id: 1, lat: 13.0827, lng: 80.2707 },
     { id: 2, lat: 13.0418, lng: 80.2341 },
@@ -20,13 +23,16 @@ export default function Driver() {
     const [selected, setSelected] = useState(null)
     const [booking, setBooking] = useState(null)
     const [filter, setFilter] = useState('All')
+    const [mapReady, setMapReady] = useState(false)
 
     const mapRef = useRef(null)
     const leafletMap = useRef(null)
     const markersRef = useRef({})
+    const routingControlRef = useRef(null)
 
     const types = ['All', 'Fast', 'Standard']
 
+    // 🔹 Fetch Hosts
     useEffect(() => {
         async function load() {
             try {
@@ -43,21 +49,42 @@ export default function Driver() {
         load()
     }, [])
 
+    // 🔹 Initialize Map & Scripts
     useEffect(() => {
         if (leafletMap.current) return
 
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-        document.head.appendChild(link)
+        const initMap = async () => {
+            // Load CSS if not already present
+            if (!document.getElementById('leaflet-css')) {
+                const linkL = document.createElement('link')
+                linkL.id = 'leaflet-css'
+                linkL.rel = 'stylesheet'
+                linkL.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+                document.head.appendChild(linkL)
 
-        const script = document.createElement('script')
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+                const linkR = document.createElement('link')
+                linkR.id = 'lrm-css'
+                linkR.rel = 'stylesheet'
+                linkR.href = 'https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css'
+                document.head.appendChild(linkR)
+            }
 
-        script.onload = () => {
+            // Safe script loader for React Strict Mode
+            const loadScript = (src, id) => new Promise((resolve) => {
+                if (document.getElementById(id)) return resolve()
+                const script = document.createElement('script')
+                script.id = id
+                script.src = src
+                script.onload = resolve
+                document.head.appendChild(script)
+            })
+
+            await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', 'leaflet-js')
+            await loadScript('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js', 'lrm-js')
+
             const L = window.L
             const map = L.map(mapRef.current, {
-                center: [13.0200, 80.2100],
+                center: [USER_LOCATION.lat, USER_LOCATION.lng],
                 zoom: 12,
                 zoomControl: false,
             })
@@ -71,10 +98,23 @@ export default function Driver() {
             ).addTo(map)
 
             L.control.zoom({ position: 'bottomleft' }).addTo(map)
+
+            // Add User Location Marker (Blue Dot)
+            const userIcon = L.divIcon({
+                className: '',
+                html: `<div style="width:18px; height:18px; background:#3b82f6; border:3px solid white; border-radius:50%; box-shadow:0 0 15px rgba(59,130,246,0.8);"></div>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+            })
+            L.marker([USER_LOCATION.lat, USER_LOCATION.lng], { icon: userIcon })
+                .addTo(map)
+                .bindTooltip('Your Location', { direction: 'top', className: 'bg-black text-white border-white/10' })
+
             leafletMap.current = map
+            setMapReady(true)
         }
 
-        document.head.appendChild(script)
+        initMap()
 
         return () => {
             if (leafletMap.current) {
@@ -84,8 +124,9 @@ export default function Driver() {
         }
     }, [])
 
+    // 🔹 Render Host Markers
     useEffect(() => {
-        if (!leafletMap.current || hostsWithCoords.length === 0) return
+        if (!mapReady || !leafletMap.current || hostsWithCoords.length === 0) return
 
         const L = window.L
         Object.values(markersRef.current).forEach(marker => {
@@ -120,7 +161,41 @@ export default function Driver() {
             marker.on('click', () => setSelected(prev => (prev === h.id ? null : h.id)))
             markersRef.current[h.id] = marker
         })
-    }, [hostsWithCoords])
+    }, [hostsWithCoords, mapReady])
+
+    // 🔹 Handle Routing when a station is selected
+    useEffect(() => {
+        if (!mapReady || !leafletMap.current || !window.L || !window.L.Routing) return
+
+        const L = window.L
+
+        // Clear existing route if any
+        if (routingControlRef.current) {
+            leafletMap.current.removeControl(routingControlRef.current)
+            routingControlRef.current = null
+        }
+
+        if (selected) {
+            const host = hostsWithCoords.find(h => h.id === selected)
+            if (host && host.lat && host.lng) {
+                routingControlRef.current = L.Routing.control({
+                    waypoints: [
+                        L.latLng(USER_LOCATION.lat, USER_LOCATION.lng),
+                        L.latLng(host.lat, host.lng)
+                    ],
+                    lineOptions: {
+                        styles: [{ color: '#A3E635', opacity: 0.8, weight: 4 }] // Lime green route
+                    },
+                    createMarker: () => null, // Don't create default green/red LRM markers
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    fitSelectedRoutes: true,
+                    showAlternatives: false,
+                    show: false // Hides the ugly default text-instructions panel
+                }).addTo(leafletMap.current)
+            }
+        }
+    }, [selected, hostsWithCoords, mapReady])
 
     const filtered = filter === 'All' ? hostsWithCoords : hostsWithCoords.filter(h => h.type === filter)
 
@@ -221,7 +296,7 @@ export default function Driver() {
                         <Info size={14} className="text-blue-400" />
                     </div>
                     <p className="text-[10px] text-neutral-500 leading-tight">
-                        Prices are dynamic based on peak grid demand in your area.
+                        Paths are calculated based on real-time routing logic.
                     </p>
                 </div>
             </div>
@@ -238,6 +313,17 @@ export default function Driver() {
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+                
+                /* Minor override to keep Leaflet tooltips looking dark/sleek */
+                .leaflet-tooltip.bg-black {
+                    background-color: rgba(0,0,0,0.8);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                }
+                .leaflet-tooltip-top.bg-black:before {
+                    border-top-color: rgba(0,0,0,0.8);
+                }
             `}} />
         </div>
     )

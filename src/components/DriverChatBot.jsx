@@ -7,9 +7,9 @@ import { X, Send } from 'lucide-react'
 // Robot Icon
 const RobotHeadIcon = ({ size = 32 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="6" width="18" height="13" rx="3" stroke="#b8f200" strokeWidth="1.5" fill="#1a1a1a"/>
-        <circle cx="8" cy="12" r="1.5" fill="#b8f200"/>
-        <circle cx="16" cy="12" r="1.5" fill="#b8f200"/>
+        <rect x="3" y="6" width="18" height="13" rx="3" stroke="#b8f200" strokeWidth="1.5" fill="#1a1a1a" />
+        <circle cx="8" cy="12" r="1.5" fill="#b8f200" />
+        <circle cx="16" cy="12" r="1.5" fill="#b8f200" />
     </svg>
 )
 
