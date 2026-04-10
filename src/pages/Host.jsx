@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Zap, ChevronLeft, TrendingUp, Battery, DollarSign, Clock, Wifi, WifiOff, Bolt } from 'lucide-react'
+import ChatBot from '../components/HomeChatBot'
 
 const SESSION_TARGET = 45
 
@@ -36,9 +37,13 @@ export default function Host() {
             {/* LEFT NAVBAR SIDEBAR */}
             <div className="w-16 md:w-20 bg-graphite border-r border-white/5 flex flex-col items-center py-6 gap-8 sticky top-0 h-screen">
                 {/* Brand/Logo Area */}
-                <div className="p-2.5 bg-volt/10 rounded-xl">
+                <div
+                    onClick={() => navigate('/')} // Add this line
+                    className="p-2.5 bg-volt/10 rounded-xl cursor-pointer hover:bg-volt/20 transition-all active:scale-95"
+                >
                     <Zap size={22} className="text-volt fill-volt" />
                 </div>
+
 
                 {/* Navigation Buttons */}
                 <div className="flex flex-col gap-4">
@@ -88,9 +93,9 @@ export default function Host() {
                         <span className="font-display font-bold text-base">Host Dashboard</span>
                     </div>
                     {/* Online Toggle */}
-                    <button onClick={() => setOnline(p => !p)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-display font-bold transition-all ${online ? 'bg-volt/20 text-volt border border-volt/30' : 'bg-steel text-white/30 border border-white/10'}`} >
+                    {/* <button onClick={() => setOnline(p => !p)} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-display font-bold transition-all ${online ? 'bg-volt/20 text-volt border border-volt/30' : 'bg-steel text-white/30 border border-white/10'}`} >
                         {online ? <Wifi size={12} /> : <WifiOff size={12} />} {online ? 'Online' : 'Offline'}
-                    </button>
+                    </button> */}
                 </div>
 
                 <div className="max-w-4xl mx-auto p-5 space-y-4">
@@ -196,6 +201,8 @@ export default function Host() {
                             </div>
                         </div>
                     </div>
+
+                    <ChatBot />
                 </div>
             </div>
         </div>

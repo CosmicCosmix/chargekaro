@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Zap, Battery, DollarSign, Clock, XCircle, CheckCircle, History as HistoryIcon, User } from 'lucide-react'
+import ChatBot from '../components/HomeChatBot'
 
 export default function ActiveSession() {
     const navigate = useNavigate()
@@ -29,6 +30,7 @@ export default function ActiveSession() {
     const [time, setTime] = useState(0)
     const [showReceipt, setShowReceipt] = useState(false);
     const [lastEarnings, setLastEarnings] = useState(0);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
 
     const handleReject = (id) => setOrders(p => p.filter(o => o.id !== id))
@@ -141,11 +143,12 @@ export default function ActiveSession() {
 
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => { if (window.confirm("Cancel session?")) { setActiveOrder(null); setUnits(0); setTime(0); } }}
+                                        onClick={() => setShowCancelConfirm(true)} // Open the new UI instead of alert
                                         className="flex-1 bg-white/5 hover:bg-red-500/10 text-white/40 hover:text-red-500 border border-white/10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all"
                                     >
                                         Cancel
                                     </button>
+
                                     <button
                                         onClick={handleCompletion}
                                         className="flex-[2] bg-volt text-carbon hover:bg-volt/90 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(200,244,0,0.2)]"
@@ -207,6 +210,43 @@ export default function ActiveSession() {
                 </div>
             )}
 
+            {/* CANCEL CONFIRMATION MODAL */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-carbon/80 backdrop-blur-md animate-fade-in">
+                    <div className="bg-graphite border border-red-500/30 w-full max-w-sm rounded-[32px] p-8 text-center shadow-[0_0_50px_rgba(239,68,68,0.1)]">
+                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                            <XCircle size={40} className="text-red-500" />
+                        </div>
+
+                        <h2 className="text-2xl font-display font-black text-white mb-2">Abort Session?</h2>
+                        <p className="text-white/40 text-xs mb-8">
+                            This will disconnect the handshake and stop the power flow immediately. No charges will be applied.
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="flex-1 bg-white/5 text-white/60 font-display font-black py-4 rounded-xl hover:bg-white/10 transition-all text-[10px] tracking-widest"
+                            >
+                                RESUME
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setActiveOrder(null);
+                                    setUnits(0);
+                                    setTime(0);
+                                    setShowCancelConfirm(false);
+                                }}
+                                className="flex-1 bg-red-500 text-white font-display font-black py-4 rounded-xl hover:bg-red-600 transition-all text-[10px] tracking-widest shadow-lg shadow-red-500/20"
+                            >
+                                ABORT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <ChatBot />
         </div>
     )
 }
