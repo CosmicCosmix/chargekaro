@@ -1,35 +1,40 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Zap, Battery, DollarSign, Clock, XCircle, CheckCircle } from 'lucide-react'
+import { ChevronLeft, Zap, Battery, DollarSign, Clock, XCircle, CheckCircle, History as HistoryIcon, User } from 'lucide-react'
 
 export default function ActiveSession() {
   const navigate = useNavigate()
   
-  // 1. Initial Mock Orders (Simulating fetch from Driver page)
+  // 1. Expanded Mock Orders
   const [orders, setOrders] = useState([
-    { id: 1, driver: "Rahul S.", car: "Tata Nexon EV", plate: "TN 09 AB 1234", requested: 5, rate: 7.5 },
-    { id: 2, driver: "Priya K.", car: "MG ZS EV", plate: "TN 07 CD 5678", requested: 3, rate: 8.0 },
-    { id: 3, driver: "Vikram R.", car: "Hyundai IONIQ 5", plate: "TN 01 EF 9012", requested: 10, rate: 9.5 }
+    { id: 1, driver: "Rahul S.", car: "Tata Nexon", plate: "TN 09 AB 1234", requested: 5, rate: 7.5 },
+    { id: 2, driver: "Priya K.", car: "MG ZS EV", plate: "TN 07 CD 5678", requested: 8, rate: 8.2 },
+    { id: 3, driver: "Anish M.", car: "Hyundai Kona", plate: "TN 12 EF 9012", requested: 12, rate: 7.0 },
+    { id: 4, driver: "Sanya V.", car: "Tiago EV", plate: "TN 02 GH 3456", requested: 4, rate: 9.0 },
+    { id: 5, driver: "Karthik R.", car: "BYD Atto 3", plate: "TN 10 JK 7890", requested: 15, rate: 8.5 },
   ])
 
-  // 2. Active Session State
+  // 2. Heavy Dummy History Data
+  const [history, setHistory] = useState([
+    { id: 101, driver: "Amit V.", amount: 150.00, units: 20, time: "12 mins ago" },
+    { id: 102, driver: "Sneha L.", amount: 84.00, units: 12, time: "45 mins ago" },
+    { id: 103, driver: "John Doe", amount: 45.50, units: 6, time: "1 hour ago" },
+    { id: 104, driver: "Meera Nair", amount: 210.00, units: 25, time: "3 hours ago" },
+    { id: 105, driver: "Rajesh K.", amount: 120.00, units: 15, time: "Yesterday" },
+    { id: 106, driver: "Pooja B.", amount: 95.00, units: 10, time: "Yesterday" },
+  ])
+
   const [activeOrder, setActiveOrder] = useState(null)
   const [units, setUnits] = useState(0)
   const [time, setTime] = useState(0)
 
-  // 3. Reject Logic: Removes the order from the list
-  const handleReject = (id) => {
-    setOrders(prev => prev.filter(order => order.id !== id))
-  }
+  const handleReject = (id) => setOrders(p => p.filter(o => o.id !== id))
 
-  // 4. Live Simulation Timer
   useEffect(() => {
     if (!activeOrder) return
-    
     const t = setInterval(() => {
       setUnits(prev => {
-        const next = prev + 0.1 // Simulated charging speed
-        // AUTO-STOP: Stops exactly at the requested limit
+        const next = prev + 0.2 
         if (next >= activeOrder.requested) {
           clearInterval(t)
           handleCompletion()
@@ -39,106 +44,110 @@ export default function ActiveSession() {
       })
       setTime(p => p + 1)
     }, 1000)
-
     return () => clearInterval(t)
   }, [activeOrder])
 
   const handleCompletion = () => {
-    alert(`Charging Target Reached! Total Collected: ₹${(activeOrder.requested * activeOrder.rate).toFixed(2)}`)
-    setActiveOrder(null)
-    setUnits(0)
-    setTime(0)
+    const earnings = (activeOrder.requested * activeOrder.rate).toFixed(2)
+    setHistory(p => [{ id: Date.now(), driver: activeOrder.driver, amount: parseFloat(earnings), units: activeOrder.requested, time: "Just now" }, ...p])
+    alert(`Payment Received: ₹${earnings}`)
+    setActiveOrder(null); setUnits(0); setTime(0);
   }
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="min-h-screen bg-carbon text-white">
-      {/* Header */}
-      <div className="px-5 py-4 bg-graphite border-b border-white/5 flex items-center gap-4 sticky top-0 z-10">
-        <button onClick={() => navigate('/host')} className="text-white/40 hover:text-white transition-colors">
-          <ChevronLeft size={20}/>
-        </button>
-        <h1 className="font-display font-bold text-base">Incoming Charging Requests</h1>
+    <div className="min-h-screen bg-carbon text-white flex flex-col lg:flex-row h-screen overflow-hidden">
+      
+      {/* MAIN CENTER SECTION */}
+      <div className="flex-1 flex flex-col h-full border-r border-white/5 overflow-hidden">
+        <div className="px-6 py-5 bg-graphite border-b border-white/5 flex items-center justify-between sticky top-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/host')} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+              <ChevronLeft size={22} className="text-white/40" />
+            </button>
+            <h1 className="font-display font-black text-lg tracking-tight uppercase">Control Center</h1>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-volt/10 rounded-full border border-volt/20">
+            <div className="w-2 h-2 bg-volt rounded-full animate-pulse" />
+            <span className="text-[10px] font-black text-volt uppercase">Node: Active</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0B0B]">
+          {!activeOrder ? (
+            <div className="space-y-6">
+              <h2 className="text-[11px] text-white/30 uppercase font-black tracking-[0.2em]">Request Queue</h2>
+              <div className="flex flex-wrap gap-4">
+                {orders.map(order => (
+                  <div key={order.id} className="bg-graphite border border-white/5 rounded-2xl p-5 w-full md:w-[calc(50%-1rem)] xl:w-[calc(33.33%-1rem)] hover:border-volt/20 transition-all group">
+                    <div className="flex justify-between mb-4">
+                      <div className="w-10 h-10 bg-steel rounded-xl flex items-center justify-center group-hover:bg-volt/10 transition-colors">
+                        <User size={18} className="text-white/40 group-hover:text-volt" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-volt font-black text-xl">₹{(order.requested * order.rate).toFixed(0)}</p>
+                        <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">{order.requested} kWh</p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-base mb-1">{order.driver}</p>
+                    <p className="text-xs text-white/40 mb-4">{order.car} • {order.plate}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleReject(order.id)} className="flex-1 py-2.5 bg-white/5 rounded-xl text-[11px] font-bold text-white/40 hover:bg-red-500/10 hover:text-red-500 transition-all">REJECT</button>
+                      <button onClick={() => { setActiveOrder(order); handleReject(order.id); }} className="flex-1 py-2.5 bg-volt rounded-xl text-[11px] font-black text-carbon">ACCEPT</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center space-y-12 py-10 animate-fade-in">
+               <div className="text-center">
+                 <p className="text-volt font-black uppercase tracking-[0.3em] text-[10px] mb-2">Live Handshake Established</p>
+                 <h2 className="text-2xl font-display font-bold">Charging {activeOrder.driver}'s {activeOrder.car}</h2>
+               </div>
+               <div className="w-72 h-72 rounded-full border-[14px] border-white/5 border-t-volt flex flex-col items-center justify-center shadow-[0_0_60px_rgba(200,244,0,0.05)] relative">
+                 <p className="text-6xl font-black">{units.toFixed(2)}</p>
+                 <p className="text-[11px] text-white/20 font-bold uppercase mt-1 tracking-widest">kWh Delivered</p>
+               </div>
+               <div className="flex gap-4 w-full max-w-md">
+                  <div className="flex-1 bg-graphite p-5 rounded-2xl border border-white/5 text-center">
+                    <p className="text-volt font-black text-2xl">₹{(units * activeOrder.rate).toFixed(1)}</p>
+                    <p className="text-[9px] text-white/20 font-bold uppercase mt-1">Revenue</p>
+                  </div>
+                  <div className="flex-1 bg-graphite p-5 rounded-2xl border border-white/5 text-center">
+                    <p className="font-black text-2xl text-white">{fmt(time)}</p>
+                    <p className="text-[9px] text-white/20 font-bold uppercase mt-1">Time</p>
+                  </div>
+               </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="max-w-xl mx-auto p-5">
-        {!activeOrder ? (
-          /* PART A: THE ORDER LIST */
-          <div className="space-y-4">
-            {orders.length > 0 ? (
-              orders.map(order => (
-                <div key={order.id} className="bg-graphite border border-white/5 rounded-2xl p-5 flex flex-col gap-5 animate-slide-up">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-display font-bold text-lg text-white">{order.driver}</p>
-                      <p className="text-xs text-white/40 font-body">{order.car} • {order.plate}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-volt font-display font-black text-lg">₹{(order.requested * order.rate).toFixed(0)}</p>
-                      <p className="text-[10px] text-white/30 uppercase tracking-tighter">{order.requested} kWh Request</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => handleReject(order.id)}
-                      className="flex-1 bg-steel/50 text-white/60 font-display font-bold py-3 rounded-xl hover:bg-red-500/20 hover:text-red-500 transition-all flex items-center justify-center gap-2"
-                    >
-                      <XCircle size={16} /> Reject
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setActiveOrder(order)
-                        handleReject(order.id) // Remove from list as it moves to active
-                      }}
-                      className="flex-1 bg-volt text-carbon font-display font-bold py-3 rounded-xl hover:bg-volt/90 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(200,244,0,0.2)]"
-                    >
-                      <CheckCircle size={16} /> Accept
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-white/20">
-                <Zap size={48} className="mb-4 opacity-10" />
-                <p className="font-body text-sm">No pending requests at the moment.</p>
+      {/* RIGHT SIDEBAR */}
+      <div className="w-full lg:w-96 bg-graphite flex flex-col h-full">
+        <div className="p-6 border-b border-white/5 flex items-center gap-3">
+          <HistoryIcon size={18} className="text-volt" />
+          <h2 className="text-xs font-black uppercase tracking-widest text-white/60">Revenue History</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {history.map(item => (
+            <div key={item.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex justify-between items-center">
+              <div>
+                <p className="text-sm font-bold text-white/90">{item.driver}</p>
+                <p className="text-[10px] text-white/30">{item.units} kWh • {item.time}</p>
               </div>
-            )}
+              <p className="text-volt font-black text-sm">+₹{item.amount.toFixed(0)}</p>
+            </div>
+          ))}
+        </div>
+        <div className="p-6 bg-graphite border-t border-white/5 mt-auto">
+          <div className="flex justify-between items-end">
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Total Sales</p>
+            <p className="text-2xl font-black text-white">₹{history.reduce((acc, curr) => acc + curr.amount, 0).toFixed(0)}</p>
           </div>
-        ) : (
-          /* PART B: THE LIVE GAUGE */
-          <div className="flex flex-col items-center py-10 gap-8 animate-fade-in">
-            <div className="text-center">
-              <h2 className="text-volt font-display font-bold uppercase tracking-widest text-xs mb-2">Charging in Progress</h2>
-              <p className="text-white/60 text-sm font-body">{activeOrder.driver}'s {activeOrder.car}</p>
-            </div>
-
-            <div className="relative w-64 h-64 rounded-full border-[10px] border-steel border-t-volt flex flex-col items-center justify-center shadow-[0_0_40px_rgba(200,244,0,0.1)]">
-              <Zap size={40} className="text-volt fill-volt mb-1 animate-pulse" />
-              <p className="text-5xl font-display font-black text-white">{units.toFixed(2)}</p>
-              <p className="text-white/30 text-xs font-body">of {activeOrder.requested} kWh</p>
-            </div>
-
-            <div className="grid grid-cols-2 w-full gap-4">
-              <div className="bg-graphite rounded-2xl p-5 border border-white/5 text-center">
-                <p className="text-volt font-display font-bold text-2xl">₹{(units * activeOrder.rate).toFixed(2)}</p>
-                <p className="text-[10px] text-white/30 font-body uppercase mt-1">Current Bill</p>
-              </div>
-              <div className="bg-graphite rounded-2xl p-5 border border-white/5 text-center">
-                <p className="text-white font-display font-bold text-2xl">{fmt(time)}</p>
-                <p className="text-[10px] text-white/30 font-body uppercase mt-1">Elapsed Time</p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setActiveOrder(null)}
-              className="w-full py-4 rounded-xl border border-white/10 text-white/30 font-display font-bold hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all"
-            >
-              STOP EMERGENCY
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
