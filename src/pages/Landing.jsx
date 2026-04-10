@@ -153,9 +153,6 @@ export default function Landing() {
                 </div>
             </section>
 
-
-
-
             {/* --- FOOTER STATUS BAR --- */}
             <footer className="relative z-20 border-t border-white/5 bg-black/40 backdrop-blur-md px-8 py-6">
                 <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-8">
