@@ -133,7 +133,11 @@ export default function ListSale() {
                 </section>
 
                 {/* Final Action */}
-                <button onClick={handleSubmit}>
+                <button
+                    onClick={() => setShowSuccess(true)}
+                    style={{ fontFamily: "'Syne', sans-serif" }}
+                    className="w-full bg-volt text-carbon font-black py-4 rounded-2xl shadow-[0_0_30px_rgba(200,244,0,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
                     PUBLISH TO MAP
                 </button>
             </div>

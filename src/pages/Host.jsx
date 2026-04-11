@@ -239,20 +239,7 @@ export default function Host() {
                         </div>
                     </div>
 
-                    {/* Pricing Controls */}
-                    <div className="bg-graphite border border-white/5 rounded-2xl p-5">
-                        <h3 className="font-display font-bold text-sm mb-4">Dynamic Pricing</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <div className="flex justify-between mb-3"><label className="text-xs text-white/40 font-body">Per Unit Rate</label><span className="font-display font-bold text-volt text-sm">₹{rate.toFixed(1)}/kWh</span></div>
-                                <input type="range" min="3" max="15" step="0.5" value={rate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-[#C8F400] h-1.5 rounded-full" />
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-3"><label className="text-xs text-white/40 font-body">Parking Fee</label><span className="font-display font-bold text-white/70 text-sm">₹{parkingFee}/session</span></div>
-                                <input type="range" min="0" max="100" step="5" value={parkingFee} onChange={e => setParkingFee(parseInt(e.target.value))} className="w-full accent-[#C8F400] h-1.5 rounded-full" />
-                            </div>
-                        </div>
-                    </div>
+
 
                     <ChatBot />
                 </div>
