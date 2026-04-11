@@ -29,7 +29,7 @@ export default function Landing() {
                         {/* LOGO IMAGE */}
                         <div className="transition-transform group-hover:rotate-12">
                             <img
-                                src="/logo.png"
+                                src="/new.png"
                                 alt="ChargeKaro Logo"
                                 className="h-16 w-auto object-contain"
                             />

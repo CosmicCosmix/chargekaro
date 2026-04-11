@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Zap, ChevronLeft, TrendingUp, Battery, DollarSign, Clock, Wifi, WifiOff, Bolt } from 'lucide-react'
 import ChatBot from '../components/HomeChatBot'
+import { Sparkles, Loader2 } from 'lucide-react';
+import { fetchAiAdvice } from '../api/aiApi';
 
 const SESSION_TARGET = 45
 
@@ -12,6 +14,8 @@ export default function Host() {
     const [parkingFee, setParkingFee] = useState(20)
     const [sessionTime, setSessionTime] = useState(0)
     const [unitsDelivered, setUnitsDelivered] = useState(0)
+    const [aiInsight, setAiInsight] = useState("");
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Live session simulation
     useEffect(() => {
@@ -29,7 +33,13 @@ export default function Host() {
     const subsidyPct = Math.round((subsidyUsed / subsidyMax) * 100)
     const walletBalance = 340.5
     const monthlyEarning = 2840
-
+    const handleGetAiAdvice = async () => {
+        setIsAiLoading(true);
+        // Passing the current state variables
+        const advice = await fetchAiAdvice(rate, parkingFee, monthlyEarning, subsidyPct);
+        setAiInsight(advice);
+        setIsAiLoading(false);
+    };
     const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
     return (
@@ -183,6 +193,48 @@ export default function Host() {
                                 <div className="flex justify-between text-xs"><span className="text-white/40">Shared to Drivers</span><span className="text-white/70">68.2 kWh</span></div>
                                 <div className="flex justify-between text-xs"><span className="text-white/40">Home Usage</span><span className="text-white/70">74.2 kWh</span></div>
                                 <div className="flex justify-between text-xs"><span className="text-white/40">Remaining Free Units</span><span className="text-volt font-display font-bold">{(subsidyMax - subsidyUsed).toFixed(1)} kWh</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pricing Controls with AI */}
+                    <div className="bg-graphite border border-white/5 rounded-2xl p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-display font-bold text-sm">Dynamic Pricing</h3>
+                            <button
+                                onClick={handleGetAiAdvice}
+                                disabled={isAiLoading}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-[#C8F400]/10 hover:bg-[#C8F400]/20 text-[#C8F400] border border-[#C8F400]/20 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+                            >
+                                {isAiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                Ask AI Advisor
+                            </button>
+                        </div>
+
+                        {/* AI Insight Box */}
+                        {aiInsight && (
+                            <div className="mb-6 p-4 bg-[#C8F400]/5 border border-[#C8F400]/20 rounded-xl flex gap-3 animate-fade-in">
+                                <Sparkles size={16} className="text-[#C8F400] shrink-0 mt-0.5" />
+                                <p className="text-xs text-white/80 leading-relaxed font-body">
+                                    {aiInsight}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <div className="flex justify-between mb-3">
+                                    <label className="text-xs text-white/40 font-body">Per Unit Rate</label>
+                                    <span className="font-display font-bold text-volt text-sm">₹{rate.toFixed(1)}/kWh</span>
+                                </div>
+                                <input type="range" min="3" max="15" step="0.5" value={rate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-[#C8F400] h-1.5 rounded-full" />
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-3">
+                                    <label className="text-xs text-white/40 font-body">Parking Fee</label>
+                                    <span className="font-display font-bold text-white/70 text-sm">₹{parkingFee}/session</span>
+                                </div>
+                                <input type="range" min="0" max="100" step="5" value={parkingFee} onChange={e => setParkingFee(parseInt(e.target.value))} className="w-full accent-[#C8F400] h-1.5 rounded-full" />
                             </div>
                         </div>
                     </div>
